@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use crate::interpreter::{add_instruction, make_keyword_map, Callback, GlobalVariables, VariableMap, VariableTypes};
+use std::collections::{BTreeMap};
+use crate::interpreter::{add_instruction, make_keyword_map, Callback, GlobalVariables, VariableTypes};
 
 /// Parses a value into a f32.
 fn parse_value(value: &str, global_variables: &GlobalVariables) -> f32 {
@@ -29,7 +29,7 @@ fn parse_value(value: &str, global_variables: &GlobalVariables) -> f32 {
     }
 }
 
-pub fn standard_lib_map() -> HashMap<String, Callback> {
+pub fn standard_lib_map() -> BTreeMap<String, Callback> {
     let mut instructions = make_keyword_map();
 
     fn op(parameters: Vec<&str>, global_variables: &mut GlobalVariables) {
@@ -54,6 +54,10 @@ pub fn standard_lib_map() -> HashMap<String, Callback> {
             "div" => {
                 x / y
             }
+            
+            "eq" => {
+                (x == y) as i32 as f32
+            }
 
             _ => {
                 println!("Unrecognized operation. Defaulting to zero.");
@@ -70,17 +74,39 @@ pub fn standard_lib_map() -> HashMap<String, Callback> {
 
     fn jump(parameters: Vec<&str>, global_variables: &mut GlobalVariables) {
         let position_str = parameters[1];
+        let operation = parameters[2];
+        let x_str = parameters[3];
+        let y_str = parameters[4];
+        
         let position = parse_value(position_str, &global_variables);
-
+        let x = parse_value(x_str, &global_variables);
+        let y = parse_value(y_str, &global_variables);
+        
+        let should_jump;
+        
+        should_jump = match operation {
+            "equal" => x == y,
+            "notEqual" => x != y,
+            
+            _ => {
+                println!("Unrecognized operation. Defaulting to false.");
+                false
+            }
+        };
+        
+        if !should_jump {
+            return;
+        }
+        
         // one is subtracted since it'll be added again by the end of execution.
         global_variables.position = (position as usize) - 1;
     }
     add_instruction(&mut instructions, String::from("jump"), Callback {
-        parameter_count: 1,
+        parameter_count: 4,
         callback: jump
     });
 
-    fn stop(parameters: Vec<&str>, global_variables: &mut GlobalVariables) {
+    fn stop(_: Vec<&str>, global_variables: &mut GlobalVariables) {
         // In theory, this should trigger the condition to stop the execution. This is due to it
         // ending execution once the position is larger than the code vector.
         global_variables.position = usize::MAX - 1;
@@ -90,7 +116,7 @@ pub fn standard_lib_map() -> HashMap<String, Callback> {
         callback: stop
     });
     
-    fn end(parameters: Vec<&str>, global_variables: &mut GlobalVariables) {
+    fn end(_: Vec<&str>, global_variables: &mut GlobalVariables) {
         global_variables.position = 0;
     }
     add_instruction(&mut instructions, String::from("end"), Callback {
@@ -109,8 +135,9 @@ pub fn standard_lib_map() -> HashMap<String, Callback> {
             
             to_print = match variable {
                 VariableTypes::Float(value) => value.to_string(),
+                #[allow(suspicious_double_ref_op)]
                 VariableTypes::Str(value) => String::from(value.clone()),
-                // _ => to_print = String::from("null") // false null lmaooooo
+                // _ => to_print = String::from("null")
             };
         }
 

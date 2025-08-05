@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap};
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum VariableTypes {
     Str(&'static str),
     Float(f32),
@@ -12,13 +13,14 @@ pub struct GlobalVariables {
     pub print_buffer: Vec<String>
 }
 
+#[derive(Clone)]
 pub struct VariableMap {
-    variables: HashMap<String, VariableTypes>
+    variables: BTreeMap<String, VariableTypes>
 }
 
 impl VariableMap {
     pub fn new() -> Self {
-        Self {variables: HashMap::new()}
+        Self {variables: BTreeMap::new()}
     }
     
     pub fn modify(&mut self, name: &str, value: VariableTypes) {
@@ -39,19 +41,34 @@ impl VariableMap {
 }
 
 // This helps simplify the type parameter for the callback into a much simpler and easier to adjust
-// type. This will also help simplify the verification of the parameter count. 
+// type. This will also help simplify the verification of the parameter count.
+#[allow(dead_code)]
 pub struct Callback {
     pub parameter_count: usize,
     pub callback: fn(Vec<&str>, &mut GlobalVariables)
 }
 
 /// Interprets a vector of primitive strings. These strings should represent valid mlog.
-pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) -> Result<(), &'static str> {
+pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>) -> Result<u128, &'static str> {
     let mut global_state = GlobalVariables {
         position: 1usize, 
         variables: VariableMap::new(),
         print_buffer: vec![]
     };
+
+    let mut processed_lines = vec![];
+    
+    for line in code {
+        let line_parameters: Vec<&str> = line.split(" ").collect();
+        
+        if !instruction_map.contains_key(line_parameters[0]) {
+            return Err("Unrecognized keyword.")
+        }
+        
+        processed_lines.push(line_parameters);
+    }
+
+    let mut accumulator = 0u128;
 
     loop {
         if global_state.position - 1 > code.len() {
@@ -60,36 +77,34 @@ pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) 
             global_state.position = 1;
         }
         
-        let line = code[global_state.position - 1];
-        let line_parameters: Vec<&str> = line.split(" ").collect();
+        let line_parameters = &processed_lines[global_state.position - 1];
         
-        if !instruction_map.contains_key(line_parameters[0]) {
-            return Err("Unrecognized keyword.")
-        } else if line_parameters.len() == 0 {
+        if line_parameters.len() == 0 {
             continue
         }
 
         let func = instruction_map[line_parameters[0]].callback;
-        func(line_parameters, &mut global_state);
+        func(line_parameters.clone(), &mut global_state);
         // println!("{}", global_state.position);
 
         global_state.position += 1;
+        accumulator += 1;
     }
     
     // println!("{:?}", global_state.variables.variables);
-    Ok(())
+    Ok(accumulator)
 }
 
-/// Adds an instruction into the hashmap for the interpreter. 
-pub fn add_instruction(instruction_map: &mut HashMap<String, Callback>, instruction: String,
-                       callback: Callback) -> &HashMap<String, Callback> {
+/// Adds an instruction into the BTreeMap for the interpreter. 
+pub fn add_instruction(instruction_map: &mut BTreeMap<String, Callback>, instruction: String,
+                       callback: Callback) -> &BTreeMap<String, Callback> {
     instruction_map.insert(instruction, callback);
     instruction_map
 }
 
 /// Create and return a new keyword map. This simplifies the creation of the keyword map itself.
-/// Otherwise, you'd have to manually state the type of the HashMap.
-pub fn make_keyword_map() -> HashMap<String, Callback> {
-    let map: HashMap<String, Callback> = HashMap::new();
+/// Otherwise, you'd have to manually state the type of the BTreeMap.
+pub fn make_keyword_map() -> BTreeMap<String, Callback> {
+    let map: BTreeMap<String, Callback> = BTreeMap::new();
     map
 }
