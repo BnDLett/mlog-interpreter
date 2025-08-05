@@ -8,7 +8,8 @@ pub enum VariableTypes {
 
 pub struct GlobalVariables {
     pub position: usize,
-    pub variables: VariableMap
+    pub variables: VariableMap,
+    pub print_buffer: Vec<String>
 }
 
 pub struct VariableMap {
@@ -27,6 +28,14 @@ impl VariableMap {
     pub fn get(&self, name: &str) -> Result<&VariableTypes, ()> {
         self.variables.get(name).ok_or(())
     }
+    
+    pub fn get_or(&self, name: &str, fallback: &'static VariableTypes) -> &VariableTypes {
+        if !self.variables.contains_key(name) {
+            return fallback;
+        }
+        
+        self.variables.get(name).unwrap()
+    }
 }
 
 // This helps simplify the type parameter for the callback into a much simpler and easier to adjust
@@ -40,14 +49,15 @@ pub struct Callback {
 pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) -> Result<(), &'static str> {
     let mut global_state = GlobalVariables {
         position: 1usize, 
-        variables: VariableMap::new()
+        variables: VariableMap::new(),
+        print_buffer: vec![]
     };
-    
-    // let position = &global_state.position;
 
     loop {
-        if global_state.position - 1 == code.len() {
+        if global_state.position - 1 > code.len() {
             break;
+        } else if global_state.position - 1 == code.len() {
+            global_state.position = 1;
         }
         
         let line = code[global_state.position - 1];
@@ -61,11 +71,12 @@ pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) 
 
         let func = instruction_map[line_parameters[0]].callback;
         func(line_parameters, &mut global_state);
+        // println!("{}", global_state.position);
 
         global_state.position += 1;
     }
     
-    println!("{:?}", global_state.variables.variables);
+    // println!("{:?}", global_state.variables.variables);
     Ok(())
 }
 
