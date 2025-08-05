@@ -1,38 +1,56 @@
-use std::any::Any;
 use std::collections::HashMap;
 
-enum VariableTypes {
+#[derive(Debug)]
+pub enum VariableTypes {
     Str(&'static str),
     Float(f32),
 }
 
-struct VariableMap {
+pub struct GlobalVariables {
+    pub position: usize,
+    pub variables: VariableMap
+}
+
+pub struct VariableMap {
     variables: HashMap<String, VariableTypes>
 }
 
 impl VariableMap {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {variables: HashMap::new()}
     }
     
-    fn modify(&mut self, name: &str, value: VariableTypes) {
+    pub fn modify(&mut self, name: &str, value: VariableTypes) {
         self.variables.insert(name.parse().unwrap(), value);
+    }
+    
+    pub fn get(&self, name: &str) -> Result<&VariableTypes, ()> {
+        self.variables.get(name).ok_or(())
     }
 }
 
 // This helps simplify the type parameter for the callback into a much simpler and easier to adjust
 // type. This will also help simplify the verification of the parameter count. 
 pub struct Callback {
-    parameter_count: usize,
-    callback: &'static dyn Fn(Vec<&str>, &HashMap<String, VariableTypes>)
+    pub parameter_count: usize,
+    pub callback: fn(Vec<&str>, &mut GlobalVariables)
 }
 
 /// Interprets a vector of primitive strings. These strings should represent valid mlog.
 pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) -> Result<(), &'static str> {
-    let mut position = 1usize;
+    let mut global_state = GlobalVariables {
+        position: 1usize, 
+        variables: VariableMap::new()
+    };
+    
+    // let position = &global_state.position;
 
     loop {
-        let line = code[position - 1];
+        if global_state.position - 1 == code.len() {
+            break;
+        }
+        
+        let line = code[global_state.position - 1];
         let line_parameters: Vec<&str> = line.split(" ").collect();
         
         if !instruction_map.contains_key(line_parameters[0]) {
@@ -40,15 +58,14 @@ pub fn interpret(instruction_map: &HashMap<String, Callback>, code: &Vec<&str>) 
         } else if line_parameters.len() == 0 {
             continue
         }
-        
-        // let callback = &instruction_map[line_parameters[0]];
-        // let func = callback.func;
-        let func = instruction_map[line_parameters[0]].callback;
-        func(line_parameters, );
 
-        position += 1;
+        let func = instruction_map[line_parameters[0]].callback;
+        func(line_parameters, &mut global_state);
+
+        global_state.position += 1;
     }
     
+    println!("{:?}", global_state.variables.variables);
     Ok(())
 }
 
@@ -65,9 +82,3 @@ pub fn make_keyword_map() -> HashMap<String, Callback> {
     let map: HashMap<String, Callback> = HashMap::new();
     map
 }
-
-// /// Create a variable map.
-// pub fn make_variable_map() -> HashMap<String, dyn Any> {
-//     let map: HashMap<String, dyn Any> = HashMap::new();
-//     map
-// }
