@@ -28,24 +28,23 @@ fn main() {
         "stop"
     ];
     let fibonacci = fs::read_to_string("examples/fibonacci.mlog");
-    let _fib_code;
     
     if fibonacci.is_err() {
         return
     }
     let fib_raw_code = fibonacci.unwrap();
-    _fib_code = fib_raw_code.split("\n").collect();
+    let _fib_code = fib_raw_code.split("\n").collect();
     
     let target_code = &_fib_code;
     
     // println!("{:?}", target_code);
     
     let std = standard_lib_map();
-    let total_instructions = interpret(&std, target_code).expect("me when i");
+    let mut total_instructions = 0;
     let start = Instant::now();
     
     for _ in 0..ITER_COUNT {
-        interpret(&std, target_code).expect("me when i");
+        total_instructions = interpret(&std, target_code).expect("me when i");
     }
     
     let duration = start.elapsed();

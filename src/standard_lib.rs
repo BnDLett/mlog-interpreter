@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap};
 use crate::interpreter::{add_instruction, make_keyword_map, Callback, GlobalVariables, VariableTypes};
 
-/// Parses a value into a f32.
-fn parse_value(value: &str, global_variables: &mut GlobalVariables) -> Result<f32, f32> {
-    let result = value.parse::<f32>();
+/// Parses a value into a f64.
+fn parse_value(value: &str, global_variables: &mut GlobalVariables) -> Result<f64, f64> {
+    let result = value.parse::<f64>();
     // let result = lexical_core::parse(value.as_bytes());
 
     if result.is_ok() {
@@ -13,14 +13,14 @@ fn parse_value(value: &str, global_variables: &mut GlobalVariables) -> Result<f3
 
         if get_result.is_err() {
             println!("Invalid parameter: {}. Defaulting to zero.", value);
-            return Err(0f32);
+            return Err(0f64);
         }
 
         let get_value = get_result.unwrap();
 
         if get_value.float.is_none() {
             println!("Invalid parameter: {}. Defaulting to zero.", value);
-            Err(0f32)
+            Err(0f64)
         } else {
             Ok(get_value.float.unwrap())
         }
@@ -31,11 +31,11 @@ fn  parse_string(value: String, global_variables: &mut GlobalVariables) -> Strin
     let result;
 
     if value.starts_with('"') && value.ends_with('"') {
-        result = String::from(&value[1..(value.len() - 1)])
+        result = String::from(&value[1..(value.len() - 1)]).replace("\\n", "\n")
     } else {
         let fallback_value = VariableTypes {
             string: Some(String::from("null")),
-            float: Some(0f32),
+            float: Some(0f64),
         };
         let mut variable = global_variables.variables.get_or(&value, fallback_value);
 
@@ -91,8 +91,8 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         let x_str = parameters[3];
         let y_str = parameters[4];
 
-        let x = parse_value(x_str, global_variables).unwrap_or(0f32);
-        let y = parse_value(y_str, global_variables).unwrap_or(0f32);
+        let x = parse_value(x_str, global_variables).unwrap_or(0f64);
+        let y = parse_value(y_str, global_variables).unwrap_or(0f64);
 
         // println!("x: {} --- y: {}", x, y);
 
@@ -111,12 +111,12 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
             }
             
             "eq" => {
-                (x == y) as i32 as f32
+                (x == y) as i32 as f64
             }
 
             _ => {
                 println!("Unrecognized operation. Defaulting to zero.");
-                0f32
+                0f64
             }
         };
         
@@ -137,7 +137,7 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         let x_str = parameters[3];
         let y_str = parameters[4];
         
-        let position = parse_value(position_str, global_variables).unwrap_or(0f32);
+        let position = parse_value(position_str, global_variables).unwrap_or(0f64);
         let x = parse_value(x_str, global_variables);
         let y = parse_value(y_str, global_variables);
         
@@ -205,7 +205,7 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
 
     fn printflush(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         let out = parameters[1];
-        println!("{}: {}", out, global_variables.print_buffer.join("\n"));
+        println!("{}: {}", out, global_variables.print_buffer.join(""));
         
         global_variables.print_buffer.clear();
     }

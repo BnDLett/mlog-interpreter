@@ -4,13 +4,14 @@ use std::collections::{BTreeMap, HashMap};
 #[derive(Clone)]
 pub struct VariableTypes {
     pub string: Option<String>,
-    pub float: Option<f32>
+    pub float: Option<f64>
 }
 
 pub struct GlobalVariables<'a> {
     pub position: usize,
     pub variables: VariableMap,
     pub print_buffer: Vec<String>,
+    #[allow(dead_code)]
     pub instruction_map: &'a BTreeMap<String, Callback>
 }
 
