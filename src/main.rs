@@ -5,7 +5,7 @@ use crate::standard_lib::standard_lib_map;
 mod interpreter;
 mod standard_lib;
 
-const ITER_COUNT: usize = 100;
+const ITER_COUNT: usize = 1;
 
 fn main() {
     let _example_code = vec![
@@ -20,9 +20,9 @@ fn main() {
     ];
     let _bench_code = vec![
         "op add accum 0 0",
-        "op add target 100000 0",
+        "op add target 5000000 0",
         "op add accum accum 1",
-        "print accum",
+        // "print accum",
         "jump 3 notEqual accum target",
         "stop"
     ];

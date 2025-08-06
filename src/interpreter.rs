@@ -2,15 +2,16 @@ use std::collections::{BTreeMap};
 
 #[derive(Debug)]
 #[derive(Clone)]
-pub enum VariableTypes {
-    Str(&'static str),
-    Float(f32),
+pub struct VariableTypes {
+    pub string: Option<String>,
+    pub float: Option<f32>
 }
 
 pub struct GlobalVariables {
     pub position: usize,
     pub variables: VariableMap,
-    pub print_buffer: Vec<String>
+    pub print_buffer: Vec<String>,
+    pub instruction_map: BTreeMap<String, Callback>
 }
 
 #[derive(Clone)]
@@ -24,19 +25,19 @@ impl VariableMap {
     }
     
     pub fn modify(&mut self, name: &str, value: VariableTypes) {
-        self.variables.insert(name.parse().unwrap(), value);
+        self.variables.insert(String::from(name), value);
     }
     
-    pub fn get(&self, name: &str) -> Result<&VariableTypes, ()> {
-        self.variables.get(name).ok_or(())
+    pub fn get(&mut self, name: &str) -> Result<&mut VariableTypes, ()> {
+        self.variables.get_mut(name).ok_or(())
     }
     
-    pub fn get_or(&self, name: &str, fallback: &'static VariableTypes) -> &VariableTypes {
+    pub fn get_or(&mut self, name: &str, fallback: VariableTypes) -> VariableTypes {
         if !self.variables.contains_key(name) {
             return fallback;
         }
         
-        self.variables.get(name).unwrap()
+        self.variables.get_mut(name).unwrap().clone()
     }
 }
 
@@ -45,7 +46,7 @@ impl VariableMap {
 #[allow(dead_code)]
 pub struct Callback {
     pub parameter_count: usize,
-    pub callback: fn(Vec<&str>, &mut GlobalVariables)
+    pub callback: fn(Vec<&str>, &mut GlobalVariables, &Vec<&str>)
 }
 
 /// Interprets a vector of primitive strings. These strings should represent valid mlog.
@@ -53,7 +54,8 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
     let mut global_state = GlobalVariables {
         position: 1usize, 
         variables: VariableMap::new(),
-        print_buffer: vec![]
+        print_buffer: vec![],
+        instruction_map: instruction_map.clone()
     };
 
     let mut processed_lines = vec![];
@@ -84,7 +86,7 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
         }
 
         let func = instruction_map[line_parameters[0]].callback;
-        func(line_parameters.clone(), &mut global_state);
+        func(line_parameters.clone(), &mut global_state, code);
         // println!("{}", global_state.position);
 
         global_state.position += 1;
