@@ -1,0 +1,24 @@
+set first_num 1
+set second_num 1
+set new_num 0
+set limit 100
+set accum 0
+
+op add new_num first_num second_num
+op add second_num 0 first_num
+op add first_num 0 new_num
+
+op add accum accum 1
+
+jump 6 notEqual accum limit
+
+print ""
+print "fib_n:"
+print accum
+print "fib_x:"
+print first_num
+print "fib_y:"
+print second_num
+printflush message1
+
+stop

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap};
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug)]
 #[derive(Clone)]
@@ -7,21 +7,21 @@ pub struct VariableTypes {
     pub float: Option<f32>
 }
 
-pub struct GlobalVariables {
+pub struct GlobalVariables<'a> {
     pub position: usize,
     pub variables: VariableMap,
     pub print_buffer: Vec<String>,
-    pub instruction_map: BTreeMap<String, Callback>
+    pub instruction_map: &'a BTreeMap<String, Callback>
 }
 
 #[derive(Clone)]
 pub struct VariableMap {
-    variables: BTreeMap<String, VariableTypes>
+    variables: HashMap<String, VariableTypes>
 }
 
 impl VariableMap {
     pub fn new() -> Self {
-        Self {variables: BTreeMap::new()}
+        Self {variables: HashMap::with_capacity(64)}
     }
     
     pub fn modify(&mut self, name: &str, value: VariableTypes) {
@@ -46,7 +46,7 @@ impl VariableMap {
 #[allow(dead_code)]
 pub struct Callback {
     pub parameter_count: usize,
-    pub callback: fn(Vec<&str>, &mut GlobalVariables, &Vec<&str>)
+    pub callback: fn(Vec<&str>, &mut GlobalVariables, &Vec<Vec<&str>>)
 }
 
 /// Interprets a vector of primitive strings. These strings should represent valid mlog.
@@ -55,13 +55,17 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
         position: 1usize, 
         variables: VariableMap::new(),
         print_buffer: vec![],
-        instruction_map: instruction_map.clone()
+        instruction_map
     };
 
     let mut processed_lines = vec![];
     
     for line in code {
         let line_parameters: Vec<&str> = line.split(" ").collect();
+        
+        if line_parameters.is_empty() || line_parameters[0] == "" {
+            continue;
+        }
         
         if !instruction_map.contains_key(line_parameters[0]) {
             return Err("Unrecognized keyword.")
@@ -73,9 +77,9 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
     let mut accumulator = 0u128;
 
     loop {
-        if global_state.position - 1 > code.len() {
+        if global_state.position - 1 > processed_lines.len() {
             break;
-        } else if global_state.position - 1 == code.len() {
+        } else if global_state.position - 1 == processed_lines.len() {
             global_state.position = 1;
         }
         
@@ -86,14 +90,14 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
         }
 
         let func = instruction_map[line_parameters[0]].callback;
-        func(line_parameters.clone(), &mut global_state, code);
+        func(line_parameters.clone(), &mut global_state, &processed_lines);
         // println!("{}", global_state.position);
 
         global_state.position += 1;
         accumulator += 1;
+        // println!("{:?}", global_state.variables.variables);
     }
     
-    // println!("{:?}", global_state.variables.variables);
     Ok(accumulator)
 }
 

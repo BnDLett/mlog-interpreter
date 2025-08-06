@@ -2,41 +2,99 @@ use std::collections::{BTreeMap};
 use crate::interpreter::{add_instruction, make_keyword_map, Callback, GlobalVariables, VariableTypes};
 
 /// Parses a value into a f32.
-fn parse_value(value: &str, global_variables: &mut GlobalVariables) -> f32 {
+fn parse_value(value: &str, global_variables: &mut GlobalVariables) -> Result<f32, f32> {
     let result = value.parse::<f32>();
     // let result = lexical_core::parse(value.as_bytes());
 
     if result.is_ok() {
-        result.unwrap()
+        Ok(result.unwrap())
     } else {
         let get_result = global_variables.variables.get(value);
 
         if get_result.is_err() {
             println!("Invalid parameter: {}. Defaulting to zero.", value);
-            return 0f32;
+            return Err(0f32);
         }
 
         let get_value = get_result.unwrap();
 
         if get_value.float.is_none() {
-            0f32
+            println!("Invalid parameter: {}. Defaulting to zero.", value);
+            Err(0f32)
         } else {
-            get_value.float.unwrap()
+            Ok(get_value.float.unwrap())
         }
     }
+}
+
+fn  parse_string(value: String, global_variables: &mut GlobalVariables) -> String {
+    let result;
+
+    if value.starts_with('"') && value.ends_with('"') {
+        result = String::from(&value[1..(value.len() - 1)])
+    } else {
+        let fallback_value = VariableTypes {
+            string: Some(String::from("null")),
+            float: Some(0f32),
+        };
+        let mut variable = global_variables.variables.get_or(&value, fallback_value);
+
+        if variable.string.is_none() {
+            let mut bytes = [b'0'; lexical_core::BUFFER_SIZE];
+            let parsed = lexical_core::write(variable.float.unwrap(), &mut bytes);
+            result = variable.string.insert(String::from_utf8_lossy(parsed).to_string()).clone();
+        } else {
+            result = variable.clone().string.unwrap();
+        }
+    }
+
+    result
 }
 
 pub fn standard_lib_map() -> BTreeMap<String, Callback> {
     let mut instructions = make_keyword_map();
 
-    fn op(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<&str>) {
+    fn set(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
+        let variable_name = parameters[1];
+        let value_str = &parameters[2..].join(" ");
+        let value: VariableTypes;
+
+        let parsed_float = parse_value(value_str, global_variables);
+        // println!("{:?}", parsed_float);
+
+        value = if parsed_float.is_ok() {
+            // println!("parsed_str: {}", parsed_float.unwrap());
+            VariableTypes {
+                string: Some(parsed_float.unwrap().to_string()),
+                float: Some(parsed_float.unwrap())
+            }
+        } else {
+            let parsed_str = parse_string(value_str.clone(), global_variables);
+            // println!("parsed_str: {}", parsed_str);
+            
+            VariableTypes {
+                string: Some(parsed_str),
+                float: None
+            }
+        };
+
+        global_variables.variables.modify(variable_name, value);
+    }
+    add_instruction(&mut instructions, String::from("set"), Callback {
+        parameter_count: 2,
+        callback: set
+    });
+
+    fn op(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         let op_type = parameters[1];
         let var = parameters[2];
         let x_str = parameters[3];
         let y_str = parameters[4];
 
-        let x = parse_value(x_str, global_variables);
-        let y = parse_value(y_str, global_variables);
+        let x = parse_value(x_str, global_variables).unwrap_or(0f32);
+        let y = parse_value(y_str, global_variables).unwrap_or(0f32);
+
+        // println!("x: {} --- y: {}", x, y);
 
         let result = match op_type {
             "add" => {
@@ -73,13 +131,13 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         callback: op
     });
 
-    fn jump(parameters: Vec<&str>, global_variables: &mut GlobalVariables, code: &Vec<&str>) {
+    fn jump(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         let position_str = parameters[1];
         let operation = parameters[2];
         let x_str = parameters[3];
         let y_str = parameters[4];
         
-        let position = parse_value(position_str, global_variables);
+        let position = parse_value(position_str, global_variables).unwrap_or(0f32);
         let x = parse_value(x_str, global_variables);
         let y = parse_value(y_str, global_variables);
         
@@ -98,25 +156,25 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         if !should_jump {
             return;
         }
-        
-        // one is subtracted since it'll be added again by the end of execution.
-        global_variables.position = position as usize;
-        
-        let line_parameters = &processed_lines[global_state.position - 1];
-        
-        if line_parameters.len() == 0 {
-            return;
-        }
 
-        let func = instruction_map[line_parameters[0]].callback;
-        func(line_parameters.clone(), &mut global_state, code);
+        global_variables.position = (position as usize) - 1;
+        // global_variables.position = position as usize;
+        //
+        // let line_parameters = &code[global_variables.position - 1];
+        //
+        // if line_parameters.len() == 0 {
+        //     return;
+        // }
+        //
+        // let func = global_variables.instruction_map[line_parameters[0]].callback;
+        // func(line_parameters.clone(), global_variables, code);
     }
     add_instruction(&mut instructions, String::from("jump"), Callback {
         parameter_count: 4,
         callback: jump
     });
 
-    fn stop(_: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<&str>) {
+    fn stop(_: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         // In theory, this should trigger the condition to stop the execution. This is due to it
         // ending execution once the position is larger than the code vector.
         global_variables.position = usize::MAX - 1;
@@ -126,7 +184,7 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         callback: stop
     });
     
-    fn end(_: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<&str>) {
+    fn end(_: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         global_variables.position = 0;
     }
     add_instruction(&mut instructions, String::from("end"), Callback {
@@ -134,33 +192,9 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         callback: end
     });
 
-    fn printbuf(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<&str>) {
+    fn printbuf(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         let parameter = parameters[1..].join(" ");
-        let to_print: String;
-        
-        if parameter.starts_with('"') && parameter.ends_with('"') {
-            to_print = String::from(&parameter[1..(parameter.len() - 1)])
-        } else {
-            let value = VariableTypes {
-                string: Some(String::from("null")),
-                float: Some(0f32),
-            };
-            let mut variable = global_variables.variables.get_or(&parameter, value);
-            
-            // to_print = match variable {
-            //     VariableTypes::Float(value) => value.to_string(),
-            //     #[allow(suspicious_double_ref_op)]
-            //     VariableTypes::Str(value) => String::from(value.clone()),
-            //     // _ => to_print = String::from("null")
-            // };
-            if variable.string.is_none() {
-                let mut bytes = [b'0'; lexical_core::BUFFER_SIZE];
-                let parsed = lexical_core::write(variable.float.unwrap(), &mut bytes);
-                to_print = variable.string.insert(String::from_utf8_lossy(parsed).to_string()).clone();
-            } else {
-                to_print = variable.clone().string.unwrap();
-            }
-        }
+        let to_print: String = parse_string(parameter, global_variables);
 
         global_variables.print_buffer.push(to_print);
     }
@@ -169,7 +203,7 @@ pub fn standard_lib_map() -> BTreeMap<String, Callback> {
         callback: printbuf
     });
 
-    fn printflush(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<&str>) {
+    fn printflush(parameters: Vec<&str>, global_variables: &mut GlobalVariables, _: &Vec<Vec<&str>>) {
         let out = parameters[1];
         println!("{}: {}", out, global_variables.print_buffer.join("\n"));
         
