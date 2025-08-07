@@ -1,54 +1,39 @@
 use std::collections::{BTreeMap, HashMap};
 
-#[derive(Debug)]
-#[derive(Clone)]
-pub struct VariableTypes {
-    pub string: Option<String>,
-    pub float: Option<f64>
-}
+// pub struct GlobalVariables<'a> {
+//     pub position: usize,
+//     pub variables: VariableMap,
+//     pub print_buffer: Vec<String>,
+//     #[allow(dead_code)]
+//     pub instruction_map: &'a BTreeMap<String, Callback>
+// }
 
-pub struct GlobalVariables<'a> {
-    pub position: usize,
-    pub variables: VariableMap,
-    pub print_buffer: Vec<String>,
-    #[allow(dead_code)]
-    pub instruction_map: &'a BTreeMap<String, Callback>
-}
+// #[derive(Clone)]
+// pub struct VariableMap {
+//     variables: HashMap<String, VariableTypes>
+// }
 
-#[derive(Clone)]
-pub struct VariableMap {
-    variables: HashMap<String, VariableTypes>
-}
-
-impl VariableMap {
-    pub fn new() -> Self {
-        Self {variables: HashMap::with_capacity(64)}
-    }
-    
-    pub fn modify(&mut self, name: &str, value: VariableTypes) {
-        self.variables.insert(String::from(name), value);
-    }
-    
-    pub fn get(&mut self, name: &str) -> Result<&mut VariableTypes, ()> {
-        self.variables.get_mut(name).ok_or(())
-    }
-    
-    pub fn get_or(&mut self, name: &str, fallback: VariableTypes) -> VariableTypes {
-        if !self.variables.contains_key(name) {
-            return fallback;
-        }
-        
-        self.variables.get_mut(name).unwrap().clone()
-    }
-}
-
-// This helps simplify the type parameter for the callback into a much simpler and easier to adjust
-// type. This will also help simplify the verification of the parameter count.
-#[allow(dead_code)]
-pub struct Callback {
-    pub parameter_count: usize,
-    pub callback: fn(Vec<&str>, &mut GlobalVariables, &Vec<Vec<&str>>)
-}
+// impl VariableMap {
+//     pub fn new() -> Self {
+//         Self {variables: HashMap::with_capacity(64)}
+//     }
+//     
+//     pub fn modify(&mut self, name: &str, value: VariableTypes) {
+//         self.variables.insert(String::from(name), value);
+//     }
+//     
+//     pub fn get(&mut self, name: &str) -> Result<&mut VariableTypes, ()> {
+//         self.variables.get_mut(name).ok_or(())
+//     }
+//     
+//     pub fn get_or(&mut self, name: &str, fallback: VariableTypes) -> VariableTypes {
+//         if !self.variables.contains_key(name) {
+//             return fallback;
+//         }
+//         
+//         self.variables.get_mut(name).unwrap().clone()
+//     }
+// }
 
 /// Interprets a vector of primitive strings. These strings should represent valid mlog.
 pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>) -> Result<u128, &'static str> {
@@ -100,13 +85,6 @@ pub fn interpret(instruction_map: &BTreeMap<String, Callback>, code: &Vec<&str>)
     }
     
     Ok(accumulator)
-}
-
-/// Adds an instruction into the BTreeMap for the interpreter. 
-pub fn add_instruction(instruction_map: &mut BTreeMap<String, Callback>, instruction: String,
-                       callback: Callback) -> &BTreeMap<String, Callback> {
-    instruction_map.insert(instruction, callback);
-    instruction_map
 }
 
 /// Create and return a new keyword map. This simplifies the creation of the keyword map itself.

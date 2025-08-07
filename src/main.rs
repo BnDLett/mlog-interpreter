@@ -5,6 +5,7 @@ use crate::standard_lib::standard_lib_map;
 
 mod interpreter;
 mod standard_lib;
+mod lexer;
 
 const ITER_COUNT: usize = 1;
 
