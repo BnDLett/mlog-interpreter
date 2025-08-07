@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+lexical-core = "1.0.5"
+
+[profile.release]
+opt-level = 3
+debug=true

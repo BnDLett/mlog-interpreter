@@ -1,0 +1,30 @@
+set first_num 1
+set second_num 1
+set new_num 0
+set limit 1000000
+set accum 2
+
+op add new_num first_num second_num
+op add second_num 0 first_num
+op add first_num 0 new_num
+
+op add accum accum 1
+
+jump 6 notEqual accum limit
+
+print ""
+print "fib_n:\n"
+print accum
+print "\n\n"
+
+print "fib_latest:\n"
+print first_num
+print "\n\n"
+
+print "fib_previous:\n"
+print second_num
+print "\n-------------------------------"
+
+printflush message1
+
+stop
