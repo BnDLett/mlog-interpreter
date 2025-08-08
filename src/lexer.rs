@@ -55,7 +55,7 @@ pub struct Token {
 pub struct GlobalVariables<'a> {
     pub position: usize,
     // pub variable_map: VariableMap,             // maps a string to a variable
-    pub variables: [Variable; MAX_VARIABLES],  // the variables themselves
+    pub variables: Vec<Variable>,  // the variables themselves
     pub print_buffer: Vec<String>,
     #[allow(dead_code)]
     pub instruction_map: &'a HashMap<String, Instruction>
@@ -63,7 +63,7 @@ pub struct GlobalVariables<'a> {
 
 pub struct Program {
     instructions: Vec<Token>,
-    variables: [Variable; MAX_VARIABLES]
+    variables: Vec<Variable>
 }
 
 /// Adds an instruction into the BTreeMap for the interpreter. 
@@ -71,6 +71,13 @@ pub fn add_instruction(instruction_map: &mut BTreeMap<String, Instruction>, inst
                        callback: Instruction) -> &BTreeMap<String, Instruction> {
     instruction_map.insert(instruction, callback);
     instruction_map
+}
+
+/// Create and return a new keyword map. This simplifies the creation of the keyword map itself.
+/// Otherwise, you'd have to manually state the type of the BTreeMap.
+pub fn make_keyword_map() -> BTreeMap<String, Instruction> {
+    let map: BTreeMap<String, Instruction> = BTreeMap::new();
+    map
 }
 
 pub fn tokenize_vec(instructions: &BTreeMap<String, Instruction>, code: Vec<String>, 
@@ -81,8 +88,12 @@ pub fn tokenize_vec(instructions: &BTreeMap<String, Instruction>, code: Vec<Stri
     let mut accumulator = 1;
     
     for line in code {
-        token = tokenize(instructions, line, accumulator, global_variables);
-        tokens.push(token?);
+        let token_result = tokenize(instructions, line, accumulator, global_variables);
+        token = token_result?;
+        
+        if token.is_none() { continue; };
+        
+        tokens.push(token.unwrap());
         
         accumulator += 1;
     }
@@ -94,7 +105,7 @@ pub fn tokenize_vec(instructions: &BTreeMap<String, Instruction>, code: Vec<Stri
 }
 
 pub fn tokenize(instructions: &BTreeMap<String, Instruction>, line: String, position: usize, 
-                global_variables: &mut GlobalVariables) -> Result<Token, String> {
+                global_variables: &mut GlobalVariables) -> Result<Option<Token>, String> {
     if line.ends_with(":") {
         return Err(String::from("Labels are not yet supported."));
     }
@@ -103,7 +114,7 @@ pub fn tokenize(instructions: &BTreeMap<String, Instruction>, line: String, posi
     let instruction_str = line.split(" ").collect::<Vec<_>>()[0];
     let instruction_result = instructions.get(instruction_str);
     
-    if instruction_result.is_none() {
+    if instruction_result.is_none() && instruction_str != "set" {
         let error_message = String::from("Could not find instruction on line ");
         return Err(error_message + &*position.to_string());
     }
@@ -115,14 +126,18 @@ pub fn tokenize(instructions: &BTreeMap<String, Instruction>, line: String, posi
     let mut previous_char = char::from(u8::MAX); // Use MAX to prevent accidental collisions
     let mut parameters = vec![];
     let mut current_word = String::from("");
+    let mut accumulator = 1;
     
-    for ch in line.chars() {
+    let split_line = line.split_once(" ").unwrap();
+    let target_code = split_line.1;
+    
+    for ch in target_code.chars() {
         if ch == QUOTE && previous_char != BACKSLASH {
             in_string == !in_string;
             continue
         }
         
-        if ch == SPACE && !in_string {
+        if (ch == SPACE && !in_string) || accumulator == line.len() {
             let var = process_word(current_word.clone(), global_variables);
             
             parameters.push(var?);
@@ -131,12 +146,23 @@ pub fn tokenize(instructions: &BTreeMap<String, Instruction>, line: String, posi
         
         previous_char = ch;
         current_word.push(ch);
+        accumulator += 1;
     }
     
-    Ok(Token {
+    if instruction_str == "set" {
+        let result = set_variable(parameters, global_variables, position);
+        
+        if result.is_err() {
+            return Err(result.unwrap_err());
+        }
+        
+        return Ok(None);
+    }
+    
+    Ok(Some(Token {
         instruction: instruction_result.unwrap().clone(),
         parameters
-    })
+    }))
 }
 
 pub fn process_word(word: String, global_variables: &mut GlobalVariables) -> Result<Variable, String> {
@@ -167,4 +193,23 @@ pub fn process_word(word: String, global_variables: &mut GlobalVariables) -> Res
     
     let variable = &global_variables.variables[variable_index.unwrap()];
     Ok(variable.clone())
+}
+
+fn set_variable(parameters: Vec<Variable>, global_variables: &mut GlobalVariables, position: usize) -> Result<(), String> {
+    if parameters.len() != 2 {
+        return Err(format!("Invalid argument count on line {position}."));
+    }
+    
+    let variable_name = &parameters[0];
+    let variable_value = &parameters[1];
+    
+    let variable = Variable {
+        string: variable_value.string.clone(),
+        float: variable_value.float.clone(),
+        name: variable_name.string.clone()
+    };
+    
+    global_variables.variables.push(variable);
+    
+    Ok(())
 }

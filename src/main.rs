@@ -1,7 +1,4 @@
-use std::fs;
-use std::time::{Instant};
-use crate::interpreter::{interpret};
-use crate::standard_lib::standard_lib_map;
+use crate::lexer::make_keyword_map;
 
 mod interpreter;
 mod standard_lib;
@@ -28,30 +25,39 @@ fn main() {
         "jump 3 notEqual accum target",
         "stop"
     ];
-    let fibonacci = fs::read_to_string("examples/fibonacci.mlog");
+    let _set_test = vec![
+        "set xyz 5",
+        "set lorem xyz",
+        "set xyz 10"
+    ];
     
-    if fibonacci.is_err() {
-        return
-    }
-    let fib_raw_code = fibonacci.unwrap();
-    let _fib_code = fib_raw_code.split("\n").collect();
+    let keywords = make_keyword_map();
     
-    let target_code = &_fib_code;
     
-    // println!("{:?}", target_code);
-    
-    let std = standard_lib_map();
-    let mut total_instructions = 0;
-    let start = Instant::now();
-    
-    for _ in 0..ITER_COUNT {
-        total_instructions = interpret(&std, target_code).expect("me when i");
-    }
-    
-    let duration = start.elapsed();
-    let time_spent = duration.as_millis();
-    
-    println!("{:?} ms", time_spent);
-    println!("{} instructions/second", (total_instructions as usize * ITER_COUNT) as f64 / (time_spent as f64 / 1000f64));
-    println!("{} instructions/iteration", total_instructions)
+    // let fibonacci = fs::read_to_string("examples/fibonacci.mlog");
+    // 
+    // if fibonacci.is_err() {
+    //     return
+    // }
+    // let fib_raw_code = fibonacci.unwrap();
+    // let _fib_code = fib_raw_code.split("\n").collect();
+    // 
+    // let target_code = &_fib_code;
+    // 
+    // // println!("{:?}", target_code);
+    // 
+    // let std = standard_lib_map();
+    // let mut total_instructions = 0;
+    // let start = Instant::now();
+    // 
+    // for _ in 0..ITER_COUNT {
+    //     total_instructions = interpret(&std, target_code).expect("me when i");
+    // }
+    // 
+    // let duration = start.elapsed();
+    // let time_spent = duration.as_millis();
+    // 
+    // println!("{:?} ms", time_spent);
+    // println!("{} instructions/second", (total_instructions as usize * ITER_COUNT) as f64 / (time_spent as f64 / 1000f64));
+    // println!("{} instructions/iteration", total_instructions)
 }
