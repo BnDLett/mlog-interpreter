@@ -1,5 +1,3 @@
-use crate::lexer::make_keyword_map;
-
 mod interpreter;
 mod standard_lib;
 mod lexer;

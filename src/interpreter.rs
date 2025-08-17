@@ -17,20 +17,20 @@ use std::collections::{BTreeMap, HashMap};
 //     pub fn new() -> Self {
 //         Self {variables: HashMap::with_capacity(64)}
 //     }
-//     
+//
 //     pub fn modify(&mut self, name: &str, value: VariableTypes) {
 //         self.variables.insert(String::from(name), value);
 //     }
-//     
+//
 //     pub fn get(&mut self, name: &str) -> Result<&mut VariableTypes, ()> {
 //         self.variables.get_mut(name).ok_or(())
 //     }
-//     
+//
 //     pub fn get_or(&mut self, name: &str, fallback: VariableTypes) -> VariableTypes {
 //         if !self.variables.contains_key(name) {
 //             return fallback;
 //         }
-//         
+//
 //         self.variables.get_mut(name).unwrap().clone()
 //     }
 // }
