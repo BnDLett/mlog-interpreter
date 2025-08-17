@@ -4,8 +4,10 @@ version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-lexical-core = "1.0.5"
 
 [profile.release]
 opt-level = 3
-debug=true
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+debug = true
