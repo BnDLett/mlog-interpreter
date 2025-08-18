@@ -23,8 +23,8 @@ pub struct Value<'a> {
 }
 
 pub struct Variable<'a> {
-    name: String,
-    value: Value<'a>,
+    pub name: String,
+    pub value: Value<'a>,
 }
 
 pub struct GlobalState<'a> {
@@ -122,6 +122,16 @@ pub fn tokenize(word: String, global_state: &'static GlobalState<'static>) -> Re
             float,
             references: None
         }))
+    }
+    
+    let variable = global_state.variables.iter().find(|x| {x.name == word});
+    
+    if variable.is_some() {
+        return Ok(Token::Parameter(Value {
+            string: None,
+            float: None,
+            references: variable
+        }));
     }
 
     if keyword.is_none() {
