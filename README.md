@@ -1,6 +1,7 @@
 # Mindustry Logic Interpreter
-An interpreter that interprets Mindustry logic instructions. Keep in mind that this is in an alpha-esque state due to
-it being highly incomplete. Only a few instructions are implemented (just enough for fibonacci) and function properly.
+An interpreter that interprets Mindustry logic instructions. This is intended to trade off the behavior accuracy
+relative to mlog in order to maximize the instruction speed. This will also assume that the developer knows what they
+are doing.
 
 # Similar and equally-cool projects
 ## [Mindy](https://mindy.object.gay/)
@@ -14,8 +15,7 @@ close friend of mine, so I'd recommend this project over mine if you aren't seek
 interpreter.
 
 # Speed
-As of now, this is shown to be capable of up to 20 million instructions per second. However, that can dwindle down to
-around 10 million instructions per second, depending on how many instructions you use.
+**Up to** 40 million instructions/second with a dummy test. I plan on hopefully increasing this.
 
 # Usage
 Currently, this isn't designed to be used actively. This is closer to being a proof-of-concept rather than being a
