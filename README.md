@@ -15,7 +15,7 @@ close friend of mine, so I'd recommend this project over mine if you aren't seek
 interpreter.
 
 # Speed
-**Up to** 40 million instructions/second with a dummy test. I plan on hopefully increasing this.
+**Up to** 232 million instructions/second with just noops. I plan on hopefully increasing this.
 
 # Usage
 Currently, this isn't designed to be used actively. This is closer to being a proof-of-concept rather than being a

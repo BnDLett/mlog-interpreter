@@ -11,28 +11,32 @@ pub enum Token<'a> {
 
 #[derive(Clone)]
 pub struct Callback<'a> {
-    pub callback: fn(&Vec<&Value>),
+    pub callback: fn(&Vec<Value>, &mut GlobalState),
     pub name: &'a str,
     pub parameter_count: usize,
 }
 
+#[derive(Clone)]
+#[derive(Default)]
 pub struct Value<'a> {
     pub string: Option<&'a str>,
     pub references: Option<&'a Variable<'a>>,
     pub float: Option<f64>,
 }
 
+#[derive(Clone)]
 pub struct Variable<'a> {
     pub name: String,
     pub value: Value<'a>,
 }
 
+#[derive(Clone)]
 pub struct GlobalState<'a> {
     pub keywords: Vec<&'a Callback<'a>>,
     pub variables: Vec<Variable<'a>>,
 }
 
-pub fn tokenize_vec(source_code: Vec<String>, global_state: &'static GlobalState<'static>) -> Result<Vec<Vec<Token<'static>>>, String> {
+pub fn tokenize_vec<'a>(source_code: Vec<String>, global_state: &'a GlobalState<'a>) -> Result<Vec<(&'a Callback<'a>, Vec<Value<'a>>)>, String> {
     let mut result = Vec::with_capacity(source_code.len());
 
     for line in source_code {
@@ -43,20 +47,24 @@ pub fn tokenize_vec(source_code: Vec<String>, global_state: &'static GlobalState
     Ok(result)
 }
 
-pub fn tokenize_line(source_code: String, global_state: &'static GlobalState<'static>) -> Result<Vec<Token<'static>>, String> {
+pub fn tokenize_line<'a>(source_code: String, global_state: &'a GlobalState<'a>) -> Result<(&'a Callback<'a>, Vec<Value<'a>>), String> {
+    let keyword;
+    let mut parameters = Vec::new();
     let mut string_operator = None;
     let mut current_word = String::new();
     let mut _accumulator = 0usize;
-    let mut result = Vec::new();
+    let mut tokens = Vec::new();
     let mut at_end;
 
     if source_code.is_empty() {
-        return Ok(vec![]);
+        return Err(String::from("Blank lines are not allowed."));
     }
 
     for letter in source_code.chars() {
         _accumulator += 1;
         at_end = _accumulator == source_code.len();
+        // println!("{letter}");
+        // println!("{at_end}");
 
         if (string_operator.is_some()) && (letter == string_operator.unwrap()) {
             string_operator = None;
@@ -68,6 +76,10 @@ pub fn tokenize_line(source_code: String, global_state: &'static GlobalState<'st
             continue;
         };
 
+        if at_end {
+            current_word.push(letter);
+        }
+        
         if (letter == ' ' || at_end) && string_operator.is_none() {
             let word = current_word.clone();
             current_word.clear();
@@ -77,17 +89,43 @@ pub fn tokenize_line(source_code: String, global_state: &'static GlobalState<'st
             }
 
             let token = tokenize(word, global_state);
-            result.push(token?);
+            tokens.push(token?);
             continue;
         }
-
+        
         current_word.push(letter);
     }
+    
+    let potential_token = tokens.get(0);
+    
+    if potential_token.is_none() {
+        return Err(String::from("Blank lines are not allowed."));
+    }
+    
+    match potential_token.unwrap() {
+        Token::Keyword(k) => {
+            keyword = k;
+        },
+        _ => {
+            return Err(String::from("Unexpected enum type (you likely used a non-valid keyword)"));
+        }
+    }
+    
+    for token in tokens.get(1..).unwrap() {
+        match token {
+            Token::Parameter(p) => {
+                parameters.push(p.clone());
+            },
+            _ => {
+                return Err(String::from("Unexpected enum type (you likely used a non-valid parameter)"));
+            }
+        }
+    }
 
-    Ok(result)
+    Ok((*keyword, parameters))
 }
 
-pub fn tokenize(word: String, global_state: &'static GlobalState<'static>) -> Result<Token<'static>, String> {
+pub fn tokenize<'a>(word: String, global_state: &'a GlobalState<'a>) -> Result<Token<'a>, String> {
     let keyword = get_keyword(&word, global_state);
 
     if word.contains('"') || word.contains("'") {

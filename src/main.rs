@@ -11,14 +11,10 @@ const ITER_COUNT: usize = 10_000_000;
 
 fn main() {
     let _example_code = vec![
-        "op add lorem 5 4",
-        "jump 4 equal 1 1",
-        "stop",
-        "op sub ipsum 10 lorem",
-        "print lorem",
-        "print ipsum",
-        // "printflush message1",
-        "stop"
+        String::from("op add x 3 4"),
+        String::from("op add y 8 2"),
+        String::from("print x"),
+        String::from("print y")
     ];
     let _bench_code = vec![
         "set accum 0 ",
@@ -42,7 +38,7 @@ fn main() {
     
     let mut bench_code: Vec<String> = Vec::new();
     for _ in 0..ITER_COUNT {
-        bench_code.push(String::from("op 2 3 4"));
+        bench_code.push(String::from("noop"));
     }
     
     let start_parsing = Instant::now();
@@ -52,7 +48,9 @@ fn main() {
     
     let start_execution = Instant::now();
     
-    interpret(tokens, global_state);
+    let mut dummy_global = global_state.clone();
+    interpret(tokens, &mut dummy_global);
+    // global_state = &mut dummy_global;
     
     let total_duration = start.elapsed();
     let program_duration = start_parsing.elapsed();

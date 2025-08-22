@@ -1,46 +1,31 @@
-use crate::lexer::{GlobalState, Token};
+use crate::lexer::{Callback, GlobalState, Value};
 
 #[inline(always)]
-pub fn interpret(tokens: Vec<Vec<Token<'static>>>, global_state: &GlobalState) {
+pub fn interpret(tokens: Vec<(&Callback, Vec<Value>)>, global_state: &mut GlobalState) {
     let mut _accumulator = 0usize;
     let mut position = 0usize;
     
     let mut line;
-    let mut parameters = Vec::with_capacity(20);
-    let mut instruction;
-    let mut parameters_array;
+    let mut line_result;
+    let mut instruction: &Callback;
+    let mut parameters;
     
     loop {
-        line = tokens.get(position);
+        line_result = tokens.get(position);
         
         // .get() returns None if out of bounds.
-        if line.is_none() { break; }
+        if line_result.is_none() { break; }
+        line = line_result.unwrap();
         
-        instruction = line.unwrap().get(0).unwrap();
-        parameters_array = line.unwrap().get(1..).unwrap();
-        parameters.clear();
+        instruction = line.0;
+        parameters = &line.1;
         
-        for parameter in parameters_array {
-            match parameter {
-                Token::Parameter(value) => { parameters.push(value); },
-                _ => {
-                    println!("A critical error occurred when parsing parameters in the executor.");
-                    return;
-                }
-            }
-        }
-        
-        match instruction {
-            Token::Keyword(keyword) => {
-                if parameters.len() > (keyword.parameter_count) {
-                    println!("Invalid parameter count on instruction {}.", position);
-                    println!("Expected {}, found {}", keyword.parameter_count, parameters.len());
-                    return;
-                } else {
-                    (keyword.callback)(&parameters);
-                }
-            }
-            _ => { return; }
+        if parameters.len() > (instruction.parameter_count) {
+            println!("Invalid parameter count on instruction {}.", position);
+            println!("Expected {}, found {}", instruction.parameter_count, parameters.len());
+            return;
+        } else {
+            (instruction.callback)(parameters, global_state);
         }
         
         _accumulator += 1;
