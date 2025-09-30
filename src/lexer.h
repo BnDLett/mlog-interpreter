@@ -38,6 +38,7 @@ struct Line {
     struct Callback *callback;
     char *error;
     struct Value *values;
+    unsigned int position;
 };
 
 struct GlobalState {
@@ -80,10 +81,10 @@ static void reset(char *a) {
 // A highly specialized macro. Don't use unless you know what you're doing.
 #define RESET reset(word); word_index = 0; continue
 
-static struct Line lex(const char *code, struct GlobalState *global_state) {
+static struct Line lex(const char *code, struct GlobalState *global_state, const int position) {
     const unsigned long len = strlen(code);
-    char word[BUF_LENGTH] = "";
     char error[BUF_LENGTH];
+    char word[BUF_LENGTH] = "";
     unsigned int word_index = 0;
 
     unsigned char in_string = 0;
@@ -130,7 +131,9 @@ static struct Line lex(const char *code, struct GlobalState *global_state) {
                     .variable = new_variable
                 };
 
-                printf("%d\n", global_state->var_index);
+                // printf("%d\n", global_state->var_index);
+                // struct GlobalState dereffed = *global_state;
+                // global_state->var_index;
 
                 global_state->variables[global_state->var_index++] = *new_variable;
                 parameters[parameter_index++] = new_value;
@@ -158,6 +161,7 @@ static struct Line lex(const char *code, struct GlobalState *global_state) {
         .callback = &callback,
         .error = error,
         .values = parameters,
+        .position = position,
     };
     return line;
 }
@@ -175,7 +179,7 @@ static struct Line *lex_many(char program[PROGRAM_SIZE_LIMIT][BUF_LENGTH], struc
         }
 
         // printf(line);
-        lexed[position++] = lex(line, global_state);
+        lexed[position++] = lex(line, global_state, i);
     }
 
     return lexed;
