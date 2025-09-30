@@ -16,13 +16,13 @@ int main() {
     const struct Line *lexed = lex_many(example_code, &global_state);
     // printf("Lexing Result: %p\n", lexed[0].values[0].variable);
 
-    struct Error *error = get_error(lexed);
+    const struct Error *error = get_error(lexed);
     if (error != NULL) {
         printf("Error encountered on line %d.\n\t%s", error->position + 1, error->string);
         return 1;
     }
 
-    free(lexed);
+    free((void*) lexed);
 
     return 0;
 }

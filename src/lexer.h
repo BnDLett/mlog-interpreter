@@ -71,7 +71,7 @@ static struct Callback *find_callback(const char *fn_name, struct GlobalState *g
 }
 
 static void reset(char *a) {
-    const int len = sizeof(a) / sizeof(a[0]);
+    const unsigned long len = strlen(a);
 
     for (int i = 0; i < len; i++) {
         a[i] = *"";
