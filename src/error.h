@@ -13,6 +13,9 @@ struct Error {
     unsigned int position;
 };
 
+/// Checks tokens for any errors that may have resulted during the compilation process.
+/// @param tokens The tokens to check for errors.
+/// @return The first error that is discovered.
 static struct Error *get_error(const struct Line *tokens) {
     for (unsigned int i = 0; i < PROGRAM_SIZE_LIMIT; i++) {
         const struct Line line = tokens[i];
