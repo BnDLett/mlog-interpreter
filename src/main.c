@@ -22,7 +22,8 @@ int main() {
         return 1;
     }
 
-    free((void*) lexed);
+    free((void*) lexed);  // NOTE: this doesn't clear all memory referenced by `lexed`. However, the closing of the
+                          // program should cause all memory to be freed by the kernel.
 
     return 0;
 }
