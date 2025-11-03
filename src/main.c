@@ -6,6 +6,12 @@
 #include "lexer.h"
 #include "error.h"
 
+void print_error(const struct Error *error) {
+    printf("Error encountered on line %d.\n\t%s", error->position + 1, error->string);
+}
+
+#define VALIDATE if (error != NULL) { print_error(error); return 1; }
+
 int main() {
     // printf("lorem ipsum\n");
 
@@ -17,10 +23,7 @@ int main() {
     // printf("Lexing Result: %p\n", lexed[0].values[0].variable);
 
     const struct Error *error = get_error(lexed);
-    if (error != NULL) {
-        printf("Error encountered on line %d.\n\t%s", error->position + 1, error->string);
-        return 1;
-    }
+    VALIDATE;
 
     free((void*) lexed);  // NOTE: this doesn't clear all memory referenced by `lexed`. However, the closing of the
                           // program should cause all memory to be freed by the kernel.

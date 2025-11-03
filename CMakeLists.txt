@@ -7,4 +7,5 @@ add_executable(mlog_interpreter
         src/main.c
         src/lexer.h
         src/error.h
+        src/variable_parse.h
 )
