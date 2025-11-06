@@ -58,6 +58,8 @@ static struct Callback *find_callback(const char *fn_name, struct GlobalState *g
     for (int i = 0; i < CALLBACK_LIMIT; i++) {
         struct Callback *callback = &global_state->callbacks[i];
 
+        printf("%d: %p\n", i, callback);
+
         if (callback->callback == NULL) {
             return NULL;
         }
@@ -68,6 +70,21 @@ static struct Callback *find_callback(const char *fn_name, struct GlobalState *g
     }
 
     return NULL;
+}
+
+static void create_keyword(char *name, const int parameters, void callback(), struct GlobalState* global_state) {
+    struct Callback *keyword = malloc(sizeof(struct Callback));
+    keyword->name = name;
+    keyword->parameters = parameters;
+    keyword->callback = callback;
+
+    for (int i = 0; i < CALLBACK_LIMIT; i++) {
+        // if name's null, then it's inaccessible and can be overwritten.
+        if (global_state->callbacks[i].name != NULL) continue;
+
+        global_state->callbacks[i] = *keyword;
+        return;
+    }
 }
 
 static void reset(char *a) {
@@ -123,6 +140,14 @@ static struct Line lex(const char *code, struct GlobalState *global_state, const
                 word[word_index] = c;
             }
 
+            const struct Callback *callback_result = find_callback(word, global_state);
+
+            if (callback_result != NULL) {
+                callback = *callback_result;
+                RESET;
+            }
+
+            // assumes unrecognized value is a variable.
             if (strcmp(word, "") != 0) { // if it isn't "" — then it's likely not consumed/used.
                 struct Variable *new_variable = malloc(sizeof(struct Variable));
                 strncpy(new_variable->name, word, VAR_NAME_LIMIT);
@@ -139,13 +164,6 @@ static struct Line lex(const char *code, struct GlobalState *global_state, const
                 parameters[parameter_index++] = new_value;
             }
 
-            RESET;
-        }
-
-        const struct Callback *callback_result = find_callback(word, global_state);
-
-        if (callback_result != NULL) {
-            callback = *callback_result;
             RESET;
         }
 
