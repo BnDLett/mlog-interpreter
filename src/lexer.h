@@ -2,48 +2,101 @@
 // Created by lett on 9/26/25.
 //
 #pragma once
-
-#define BUF_LENGTH 1024
-#define CALLBACK_LIMIT 256
-#define VAR_LIMIT 128
-#define VAR_NAME_LIMIT 64
-#define MAX_PARAMETERS 16 // you're mental if you need anything over 16
 #define PROGRAM_SIZE_LIMIT 1024
 
-#define LEN(arr) ((int) (sizeof (arr) / sizeof (arr)[0]))
-
-#include <endian.h>
-#include <stdlib.h>
-#include <string.h>
+#include <string>
+#include <vector>
+class Value;
+using namespace std;
 
 // TODO: move these?
-struct Variable {
-    struct Value *value;
-    char name[VAR_NAME_LIMIT];
+// struct Variable {
+//     struct Value *value;
+//     char name[VAR_NAME_LIMIT];
+// };
+
+class Variable {
+    public:
+        Value* value;
+	    string name;
+
+        Variable(Value* value, const string& name) {
+            this->value = value;
+            this->name = name;
+        }
 };
 
-struct Value {
-    char string[BUF_LENGTH];
-    double value;
-    struct Variable *variable;
+//struct Value {
+//    char string[BUF_LENGTH];
+//    double value;
+//    struct Variable *variable;
+//};
+
+class Value {
+    public:
+        string str_value;
+        double value;
+        Variable* variable;
+
+        Value(const string& str_value, const double value, Variable* variable) {
+            this->str_value = str_value;
+            this->value = value;
+            this->variable = variable;
+        }
+
+        explicit Value(Variable* variable) {
+            this->variable = variable;
+            this->value = 0;
+        }
 };
 
-struct Callback {
-    void (*callback)();
-    int parameters;
-    char *name;
+// struct Callback {
+//     void (*callback)();
+//     int parameters;
+//     char *name;
+// };
+
+class Callback {
+    public:
+        void (*callback)();
+        int parameters;
+        string name;
+
+        Callback(void callback(), int parameters, const string& name) {
+            this->callback = callback;
+            this->parameters = parameters;
+            this->name = name;
+        }
+
 };
 
-struct Line {
-    struct Callback *callback;
-    char *error;
-    struct Value *values;
-    unsigned int position;
+// struct Line {
+//     struct Callback *callback;
+//     char *error;
+//     struct Value *values;
+//     unsigned int position;
+// };
+
+class Line {
+    public:
+        Callback *callback;
+        string *error;
+        vector<Value*> values;
+        unsigned int position;
+
+        Line(const unsigned int position, Callback *callback, string *error, const vector<Value*>& values) {
+            this->callback = callback;
+            this->error = error;
+            this->values = values;
+            this->position = position;
+        }
 };
 
 struct GlobalState {
-    struct Callback callbacks[CALLBACK_LIMIT];
-    struct Variable variables[VAR_LIMIT];
+    // struct Callback callbacks[CALLBACK_LIMIT];
+    // struct Variable variables[VAR_LIMIT];
+    vector<Callback*> callbacks;
+    vector<Variable*> variables;
     unsigned int var_index;
 };
 
@@ -54,65 +107,46 @@ struct GlobalState {
 
 // actual functions
 
-static struct Callback *find_callback(const char *fn_name, struct GlobalState *global_state) {
-    for (int i = 0; i < CALLBACK_LIMIT; i++) {
-        struct Callback *callback = &global_state->callbacks[i];
-
+inline Callback *find_callback(const string& fn_name, const struct GlobalState *global_state) {
+    for (Callback* callback : global_state->callbacks) {
         // printf("%d: %p\n", i, callback);
 
-        if (callback->callback == NULL) {
-            return NULL;
+        if (callback->callback == nullptr) {
+            return nullptr;
         }
 
-        if (strcmp(callback->name, fn_name) == 0) {
+        if (callback->name == fn_name) {
             return callback;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
-static void create_keyword(char *name, const int parameters, void callback(), struct GlobalState* global_state) {
-    struct Callback *keyword = malloc(sizeof(struct Callback));
-    keyword->name = name;
-    keyword->parameters = parameters;
-    keyword->callback = callback;
-
-    for (int i = 0; i < CALLBACK_LIMIT; i++) {
-        // if name's null, then it's inaccessible and can be overwritten.
-        if (global_state->callbacks[i].name != NULL) continue;
-
-        global_state->callbacks[i] = *keyword;
-        return;
-    }
+static void create_keyword(const char *name, const int parameters, void callback(), struct GlobalState* global_state) {
+    Callback* keyword = new Callback(callback, parameters, name);
+    global_state->callbacks.push_back(keyword);
 }
 
-static void reset(char *a) {
-    const unsigned long len = strlen(a);
-
-    for (int i = 0; i < len; i++) {
-        a[i] = *"";
-    }
+static void reset(string *a) {
+    a->clear();
 }
 
 // A highly specialized macro. Don't use unless you know what you're doing.
-#define RESET reset(word); word_index = 0; continue
+#define RESET reset(&word); word_index = 0; continue
 
-static struct Line lex(const char *code, struct GlobalState *global_state, const int position) {
-    const unsigned long len = strlen(code);
-    char error[BUF_LENGTH];
-    char word[BUF_LENGTH] = "";
+inline Line *lex(const string& line, struct GlobalState *global_state, const int position) {
+    string* error = nullptr;
+    string word;
+    vector<Value*> parameters = {};
+    Callback *callback = nullptr;
+
+    bool in_string = false;
     unsigned int word_index = 0;
-
-    unsigned char in_string = 0;
-    struct Value *parameters = malloc(sizeof(struct Value) * MAX_PARAMETERS);
-    unsigned int parameter_index = 0;
-    struct Callback callback = {
-        .name = NULL
-    };
+    const unsigned long len = line.length();
 
     for (int i = 0; i < len; i++) {
-        const char c = code[i];
+        const char c = line[i];
         // printf("(%s) c: %c\n", word, c);
 
         if (c == '"' || c == '\'') {
@@ -120,14 +154,8 @@ static struct Line lex(const char *code, struct GlobalState *global_state, const
             word[word_index++] = c;
 
             if (!in_string) {
-                struct Value new_value;
-
-                strncpy(new_value.string, word, BUF_LENGTH);
-                new_value.value = 0;
-                new_value.variable = NULL;
-
-                // parameters[parameter_index++] = new_value;
-                // printf("%s\n", word);
+                Value *new_value = new Value(word, 0, nullptr);
+                parameters.push_back(new_value);
 
                 RESET;
             }
@@ -140,65 +168,52 @@ static struct Line lex(const char *code, struct GlobalState *global_state, const
                 word[word_index] = c;
             }
 
-            const struct Callback *callback_result = find_callback(word, global_state);
+            Callback *callback_result = find_callback(word, global_state);
 
-            if (callback_result != NULL) {
-                callback = *callback_result;
+            if (callback_result != nullptr) {
+                callback = callback_result;
                 RESET;
             }
 
             // assumes unrecognized value is a variable.
-            if (strcmp(word, "") != 0) { // if it isn't "" — then it's likely not consumed/used.
-                struct Variable *new_variable = malloc(sizeof(struct Variable));
-                strncpy(new_variable->name, word, VAR_NAME_LIMIT);
+            if (word.empty()) { // if it isn't "" — then it's likely not consumed/used.
+                Variable *new_variable = new Variable(nullptr, word);
 
-                const struct Value new_value = {
-                    .variable = new_variable
-                };
+                Value *new_value = new Value(new_variable); // what the fuck is this design pattern??
 
-                // printf("%d\n", global_state->var_index);
-                // struct GlobalState dereffed = *global_state;
-                // global_state->var_index;
-
-                global_state->variables[global_state->var_index++] = *new_variable;
-                parameters[parameter_index++] = new_value;
+                global_state->variables.push_back(new_variable);
+                parameters.push_back(new_value);
             }
 
             RESET;
         }
 
-        word[word_index++] = c;
+        word.push_back(c);
     }
 
-    if (callback.name == NULL) {
+    if (callback == nullptr) {
         reset(error);
-        strcpy(error, "Couldn't find valid callback.");
+        *error = "Couldn't find valid callback.";
     }
 
-    const struct Line line = {
-        .callback = &callback,
-        .error = error,
-        .values = parameters,
-        .position = position,
-    };
-    return line;
+    Line *lexed_line = new Line(position, callback, error, parameters);
+    return lexed_line;
 }
 
-static struct Line *lex_many(char program[PROGRAM_SIZE_LIMIT][BUF_LENGTH], struct GlobalState *global_state) {
+inline vector<Line*> lex_many(string program[PROGRAM_SIZE_LIMIT], struct GlobalState *global_state) {
     // size_t n = sizeof(program) / sizeof(program[0]);
-    struct Line *lexed = malloc(PROGRAM_SIZE_LIMIT * sizeof(struct Line));
-    unsigned int position = 0;
+    vector<Line*> lexed_program = {};
 
     for (int i = 0; i < PROGRAM_SIZE_LIMIT; i++) {
-        const char *line = program[i];
+        string line = program[i];
 
-        if (strcmp(line, "") == 0) {
+        if (line.empty()) {
             continue;
         }
 
         // printf(line);
-        lexed[position++] = lex(line, global_state, i);
+        lexed_program.push_back(lex(line, global_state, i));
     }
 
-    return lexed;
+    return lexed_program;
 }

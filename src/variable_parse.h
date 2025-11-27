@@ -9,47 +9,40 @@
 
 #define SET_KEYWORD "set"
 
-static struct Line *get_declarations(const struct Line *program) {
-    int var_count = 0;
-    struct Line *declarations = malloc(sizeof(struct Line) * VAR_LIMIT);
+inline vector<Line*> get_declarations(const vector<Line*>& program) {
+    vector<Line*> declarations = {};
 
-    for (int i = 0; i < PROGRAM_SIZE_LIMIT; i++) {
-        const struct Line line = program[i];
+    for (int i = 0; i < program.capacity(); i++) {
+        Line* line = program.at(i);
 
-        if (line.callback == NULL || line.callback->name == NULL) {
+        // if (line.callback == NULL || line.callback->name == NULL) {
+        //     continue;
+        // }
+
+        if (line->callback->name == SET_KEYWORD) {
             continue;
         }
 
-        if (strncmp(line.callback->name, SET_KEYWORD, strlen(SET_KEYWORD)) != 0) {
-            continue;
-        }
-
-        declarations[i] = line;
-        var_count++;
+        declarations.push_back(line);
     }
 
     return declarations;
 }
 
-static void parse_variables(const struct Line *program, struct GlobalState* global_state) {
-    const struct Line *declarations = get_declarations(program);
+static void parse_variables(const vector<Line*>& program, struct GlobalState* global_state) {
+    const vector<Line*> declarations = get_declarations(program);
 
-    for (int i = 0; i < VAR_LIMIT; i++) {
-        const struct Line declaration = declarations[i];
+    for (int i = 0; i < global_state->variables.capacity(); i++) {
+        const Line* declaration = declarations[i];
 
-        if (declaration.values == NULL) continue;
+        if (declaration == nullptr) continue;
 
-        const struct Value name = declaration.values[0];
-        struct Value value = declaration.values[1];
+        const Value* name = declaration->values[0];
+        Value* value = declaration->values[1];
+        Variable* variable = new Variable(value, name->str_value);
 
-        struct Variable *variable = malloc(sizeof(struct Variable));
-        strncpy(variable->name, name.variable->name, VAR_NAME_LIMIT);
-        variable->value = &value;
-
-        global_state->variables[global_state->var_index++] = *variable;
+        global_state->variables.push_back(variable);
     }
-
-    free((void*) declarations);
 }
 
 // empty since its functionality is handled at compile-time
