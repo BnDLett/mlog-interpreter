@@ -10,7 +10,7 @@
 using namespace std;
 
 void print_error(const struct Error *error) {
-    cout << "Error encountered on line " << error->position + 1 << ".\n\t" << *error->message << endl;
+    cout << "Error encountered on line " << error->position + 1 << ".\n\t" << error->message << endl;
 }
 
 #define VALIDATE if (error != nullptr) { print_error(error); return 1; }
@@ -18,13 +18,9 @@ void print_error(const struct Error *error) {
 int main() {
     // printf("lorem ipsum\n");
 
-    cout << "lorem";
-
-    string example_code[1024] = {"set world \"phosphophyllite\"", "set sit \"amet\""};
+    string example_code[1024] = {"set world \"phosphophyllite\"", "set sit 500.67.420"};
     struct GlobalState global_state;
     global_state.var_index = 0;
-
-    cout << "lorem";
 
     init_variable_parser(&global_state);
 
@@ -34,7 +30,15 @@ int main() {
     const struct Error *error = get_error(lexed);
     VALIDATE;
 
-    parse_variables(lexed, &global_state);
+    parse_variables(&lexed, &global_state);
+
+    for (const Variable* variable : global_state.variables) {
+        if (variable->value == nullptr) {
+            continue;
+        }
+
+        cout << variable->name << ": " << variable->value->str_value << endl;
+    }
 
     return 0;
 }

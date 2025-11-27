@@ -80,11 +80,11 @@ class Callback {
 class Line {
     public:
         Callback *callback;
-        string *error;
+        string error;
         vector<Value*> values;
         unsigned int position;
 
-        Line(const unsigned int position, Callback *callback, string *error, const vector<Value*>& values) {
+        Line(const unsigned int position, Callback *callback, string error, const vector<Value*>& values) {
             this->callback = callback;
             this->error = error;
             this->values = values;
@@ -128,15 +128,56 @@ static void create_keyword(const char *name, const int parameters, void callback
     global_state->callbacks.push_back(keyword);
 }
 
-static void reset(string *a) {
-    a->clear();
+inline bool numbers_only(const string& target_string) {
+    const string numbers = "0123456789";
+    bool is_float = false;
+
+    for (const char c : target_string) {
+        if (c == '.') {
+            if (is_float) {
+                return false;
+            }
+
+            is_float = true;
+            continue;
+        }
+
+        if (numbers.find(c) == string::npos) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
+/**
+ * Checks whether the name of a variable is valid.
+ * @param name The name of the variable.
+ * @return `true` if the variable is valid, otherwise `false`.
+ */
+inline bool variable_name_valid(const string& name) {
+    constexpr char banned_characters[] = {' ', '.', ','};
+    bool contains_banned = false;
+
+    for (const char c : banned_characters) {
+        if (name.find(c) != string::npos) {
+            contains_banned = true;
+            break;
+        }
+    }
+
+    return !contains_banned;
+}
+
+// static void reset(string *a) {
+//     a->clear();
+// }
+
 // A highly specialized macro. Don't use unless you know what you're doing.
-#define RESET reset(&word); word_index = 0; continue
+#define RESET word.clear(); word_index = 0; continue
 
 inline Line *lex(const string& line, struct GlobalState *global_state, const int position) {
-    string* error = nullptr;
+    string error = "\0";
     string word;
     vector<Value*> parameters = {};
     Callback *callback = nullptr;
@@ -146,12 +187,12 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
     const unsigned long len = line.length();
 
     for (int i = 0; i < len; i++) {
-        const char c = line[i];
+        const char c = line.at(i);
         // printf("(%s) c: %c\n", word, c);
 
         if (c == '"' || c == '\'') {
             in_string = !in_string;
-            word[word_index++] = c;
+            word.push_back(c);
 
             if (!in_string) {
                 Value *new_value = new Value(word, 0, nullptr);
@@ -165,7 +206,7 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
 
         if ((c == ' ' && !in_string) || i == len - 1) {
             if (i == len - 1) {
-                word[word_index] = c;
+                word.push_back(c);
             }
 
             Callback *callback_result = find_callback(word, global_state);
@@ -175,16 +216,23 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
                 RESET;
             }
 
-            // assumes unrecognized value is a variable.
-            if (word.empty()) { // if it isn't "" — then it's likely not consumed/used.
-                Variable *new_variable = new Variable(nullptr, word);
+            if (!word.empty() && numbers_only(word)) {
+                Value* new_value = new Value(word, stod(word), nullptr);
+                parameters.push_back(new_value);
+                RESET;
+            }
 
-                Value *new_value = new Value(new_variable); // what the fuck is this design pattern??
+            // assumes unrecognized value is a variable.
+            if (!word.empty() && variable_name_valid(word)) { // if it isn't "" — then it's likely not consumed/used.
+                Variable *new_variable = new Variable(nullptr, word);
+                Value *new_value = new Value(new_variable);
 
                 global_state->variables.push_back(new_variable);
                 parameters.push_back(new_value);
+                RESET;
             }
 
+            error = "Could not find a valid representation for token: \"" + word + '"';
             RESET;
         }
 
@@ -192,8 +240,7 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
     }
 
     if (callback == nullptr) {
-        reset(error);
-        *error = "Couldn't find valid callback.";
+        error = "Couldn't find valid callback.";
     }
 
     Line *lexed_line = new Line(position, callback, error, parameters);

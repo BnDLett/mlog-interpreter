@@ -10,10 +10,10 @@
 
 class Error {
     public:
-        const string* message;
+    string message;
         unsigned int position;
 
-        Error(const string* message, const unsigned int position) {
+        Error(const string& message, const unsigned int position) {
             this->message = message;
             this->position = position;
         }
@@ -26,10 +26,10 @@ inline Error *get_error(vector<Line*> tokens) {
     for (unsigned int i = 0; i < tokens.capacity(); i++) {
         Line* line = tokens.at(i);
 
-        const string* error_message = line->error;
+        const string error_message = line->error;
         const unsigned int position = line->position;
 
-        if (error_message != nullptr) {
+        if (!error_message.empty()) {
             // struct Error *error = malloc(sizeof(struct Error));
             //
             // error->string = error_message;

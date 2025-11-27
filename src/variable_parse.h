@@ -12,14 +12,12 @@
 inline vector<Line*> get_declarations(const vector<Line*>& program) {
     vector<Line*> declarations = {};
 
-    for (int i = 0; i < program.capacity(); i++) {
-        Line* line = program.at(i);
-
+    for (Line* line : program) {
         // if (line.callback == NULL || line.callback->name == NULL) {
         //     continue;
         // }
 
-        if (line->callback->name == SET_KEYWORD) {
+        if (line->callback->name != SET_KEYWORD) {
             continue;
         }
 
@@ -29,19 +27,18 @@ inline vector<Line*> get_declarations(const vector<Line*>& program) {
     return declarations;
 }
 
-static void parse_variables(const vector<Line*>& program, struct GlobalState* global_state) {
-    const vector<Line*> declarations = get_declarations(program);
+static void parse_variables(const vector<Line*>* program, struct GlobalState* global_state) {
+    const vector<Line*> declarations = get_declarations(*program);
 
-    for (int i = 0; i < global_state->variables.capacity(); i++) {
+    for (int i = 0; i < declarations.capacity(); i++) {
         const Line* declaration = declarations[i];
 
         if (declaration == nullptr) continue;
 
-        const Value* name = declaration->values[0];
-        Value* value = declaration->values[1];
-        Variable* variable = new Variable(value, name->str_value);
+        Variable* variable = declaration->values[0]->variable;
+        variable->value = declaration->values.at(1);
 
-        global_state->variables.push_back(variable);
+        // global_state->variables.push_back(variable);
     }
 }
 
