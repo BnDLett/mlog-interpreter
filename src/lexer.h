@@ -58,7 +58,7 @@ static struct Callback *find_callback(const char *fn_name, struct GlobalState *g
     for (int i = 0; i < CALLBACK_LIMIT; i++) {
         struct Callback *callback = &global_state->callbacks[i];
 
-        printf("%d: %p\n", i, callback);
+        // printf("%d: %p\n", i, callback);
 
         if (callback->callback == NULL) {
             return NULL;

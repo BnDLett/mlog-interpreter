@@ -20,7 +20,7 @@ static struct Line *get_declarations(const struct Line *program) {
             continue;
         }
 
-        if (strcmp(line.callback->name, SET_KEYWORD) != 0) {
+        if (strncmp(line.callback->name, SET_KEYWORD, strlen(SET_KEYWORD)) != 0) {
             continue;
         }
 
@@ -37,11 +37,13 @@ static void parse_variables(const struct Line *program, struct GlobalState* glob
     for (int i = 0; i < VAR_LIMIT; i++) {
         const struct Line declaration = declarations[i];
 
+        if (declaration.values == NULL) continue;
+
         const struct Value name = declaration.values[0];
         struct Value value = declaration.values[1];
 
         struct Variable *variable = malloc(sizeof(struct Variable));
-        strncpy(variable->name, name.string, VAR_NAME_LIMIT);
+        strncpy(variable->name, name.variable->name, VAR_NAME_LIMIT);
         variable->value = &value;
 
         global_state->variables[global_state->var_index++] = *variable;

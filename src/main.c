@@ -30,8 +30,7 @@ int main() {
 
     parse_variables(lexed, &global_state);
 
-    free((void*) lexed);  // NOTE: this doesn't clear all memory referenced by `lexed`. However, the closing of the
-                          // program should cause all memory to be freed by the kernel.
+    free((void*) lexed);
 
     return 0;
 }
