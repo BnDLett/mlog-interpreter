@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+struct GlobalState;
 class Value;
 using namespace std;
 
@@ -36,6 +37,9 @@ class Value {
     public:
         string str_value;
         double value;
+        // TODO: remove `value_updated` if it's unnecessary
+        // Whether the decimal value was updated and needs to be reprocessed when printing the value.
+        bool value_updated;
         Variable* variable;
 
         Value(const string& str_value, const double value, Variable* variable) {
@@ -58,7 +62,7 @@ class Value {
 
 class Callback {
     public:
-        void (*callback)();
+        void (*callback)(vector<Value*>, GlobalState*);
         int parameters;
         string name;
 
@@ -97,7 +101,7 @@ struct GlobalState {
     // struct Variable variables[VAR_LIMIT];
     vector<Callback*> callbacks;
     vector<Variable*> variables;
-    unsigned int var_index;
+    unsigned int executor_index;
 };
 
 // union Optional {
