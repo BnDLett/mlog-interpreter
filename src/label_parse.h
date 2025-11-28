@@ -1,0 +1,8 @@
+//
+// Created by bored on 11/28/2025.
+//
+
+#ifndef MLOG_INTERPRETER_LABEL_PARSE_H
+#define MLOG_INTERPRETER_LABEL_PARSE_H
+
+#endif //MLOG_INTERPRETER_LABEL_PARSE_H

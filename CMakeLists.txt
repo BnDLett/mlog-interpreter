@@ -9,4 +9,6 @@ add_executable(mlog_interpreter
         src/lexer.h
         src/error.h
         src/variable_parse.h
+        src/executor.h
+        src/label_parse.h
 )

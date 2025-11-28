@@ -24,10 +24,10 @@ int main() {
 
     init_variable_parser(&global_state);
 
-    vector<Line*> lexed = lex_many(example_code, &global_state);
+    const vector<Line*> lexed = lex_many(example_code, &global_state);
     // printf("Lexing Result: %p\n", lexed[0].values[0].variable);
 
-    const struct Error *error = get_error(lexed);
+    const Error *error = get_error(lexed);
     VALIDATE;
 
     parse_variables(&lexed, &global_state);
