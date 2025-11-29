@@ -43,7 +43,7 @@ static void parse_variables(const vector<Line*>* program, struct GlobalState* gl
 }
 
 // empty since its functionality is handled at compile-time
-static void set_callback() {}
+static void set_callback(vector<Value*>, GlobalState*) {}
 
 static void init_variable_parser(struct GlobalState* global_state) {
     // struct Callback *callback = malloc(sizeof(struct Callback));

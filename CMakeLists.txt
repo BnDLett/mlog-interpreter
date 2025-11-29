@@ -11,4 +11,5 @@ add_executable(mlog_interpreter
         src/variable_parse.h
         src/executor.h
         src/label_parse.h
+        src/libraries/std.h
 )

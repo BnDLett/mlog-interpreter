@@ -36,11 +36,12 @@ class Variable {
 class Value {
     public:
         string str_value;
-        double value;
+        string target_block;  // ideally, this should only be used for printing
+        double value = 0;
         // TODO: remove `value_updated` if it's unnecessary
         // Whether the decimal value was updated and needs to be reprocessed when printing the value.
-        bool value_updated;
-        Variable* variable;
+        bool value_updated = false;
+        Variable* variable = nullptr;
 
         Value(const string& str_value, const double value, Variable* variable) {
             this->str_value = str_value;
@@ -51,6 +52,10 @@ class Value {
         explicit Value(Variable* variable) {
             this->variable = variable;
             this->value = 0;
+        }
+
+        explicit Value(const string& target_block) {
+            this->target_block = target_block;
         }
 };
 
@@ -66,7 +71,7 @@ class Callback {
         int parameters;
         string name;
 
-        Callback(void callback(), int parameters, const string& name) {
+        Callback(void callback(vector<Value*>, GlobalState*), int parameters, const string& name) {
             this->callback = callback;
             this->parameters = parameters;
             this->name = name;
@@ -101,6 +106,7 @@ struct GlobalState {
     // struct Variable variables[VAR_LIMIT];
     vector<Callback*> callbacks;
     vector<Variable*> variables;
+    vector<string> print_buffer;
     unsigned int executor_index;
 };
 
@@ -127,9 +133,20 @@ inline Callback *find_callback(const string& fn_name, const struct GlobalState *
     return nullptr;
 }
 
-static void create_keyword(const char *name, const int parameters, void callback(), struct GlobalState* global_state) {
+static void create_keyword(const char* name, const int parameters, void (*callback)(vector<Value*>, GlobalState*), struct GlobalState* global_state) {
+    // void (*callback)(vector<Value*>, GlobalState*);
     Callback* keyword = new Callback(callback, parameters, name);
     global_state->callbacks.push_back(keyword);
+}
+
+inline Variable* find_variable(const string& name, const GlobalState* global_state) {
+    for (Variable* variable : global_state->variables) {
+        if (variable->name == name) {
+            return variable;
+        }
+    }
+
+    return nullptr;
 }
 
 inline bool numbers_only(const string& target_string) {
@@ -226,12 +243,31 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
                 RESET;
             }
 
+            if (numbers_only(&word.at(word.length() - 1))) {
+                Value* new_value = new Value(word);
+                parameters.push_back(new_value);
+                RESET;
+            }
+
+            bool is_set = false;
+            if (callback != nullptr) {
+                is_set = callback->name == "set";
+            }
+
             // assumes unrecognized value is a variable.
-            if (!word.empty() && variable_name_valid(word)) { // if it isn't "" — then it's likely not consumed/used.
+            if (!word.empty() && variable_name_valid(word) && is_set) { // if it isn't "" — then it's likely not consumed/used.
                 Variable *new_variable = new Variable(nullptr, word);
                 Value *new_value = new Value(new_variable);
 
                 global_state->variables.push_back(new_variable);
+                parameters.push_back(new_value);
+                RESET;
+            }
+
+            // word is a variable
+            Variable* variable = find_variable(word, global_state);
+            if (variable != nullptr) {
+                Value* new_value = new Value("", 0, variable);
                 parameters.push_back(new_value);
                 RESET;
             }

@@ -7,6 +7,9 @@
 
 #include <string>
 #include <iostream>
+
+#include "executor.h"
+#include "libraries/std.h"
 using namespace std;
 
 void print_error(const struct Error *error) {
@@ -18,11 +21,17 @@ void print_error(const struct Error *error) {
 int main() {
     // printf("lorem ipsum\n");
 
-    string example_code[1024] = {"set world \"phosphophyllite\"", "set sit 500.67.420"};
+    string example_code[1024] = {
+        "set world \"phosphophyllite\"",
+        "set sit 69.420",
+        "print sit",
+        "print \"Hello, Phos!\"",
+        "printflush message1",
+    };
     struct GlobalState global_state;
-    global_state.var_index = 0;
 
     init_variable_parser(&global_state);
+    init_std(&global_state);
 
     const vector<Line*> lexed = lex_many(example_code, &global_state);
     // printf("Lexing Result: %p\n", lexed[0].values[0].variable);
@@ -32,13 +41,15 @@ int main() {
 
     parse_variables(&lexed, &global_state);
 
-    for (const Variable* variable : global_state.variables) {
-        if (variable->value == nullptr) {
-            continue;
-        }
+    // for (const Variable* variable : global_state.variables) {
+    //     if (variable->value == nullptr) {
+    //         continue;
+    //     }
+    //
+    //     cout << variable->name << ": " << variable->value->str_value << endl;
+    // }
 
-        cout << variable->name << ": " << variable->value->str_value << endl;
-    }
+    execute_many(lexed, &global_state);
 
     return 0;
 }
