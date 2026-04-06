@@ -61,13 +61,21 @@ static void op_callback(vector<Value*> values, GlobalState* global_state) {
     // cout << static_cast<int>(operation->variable->value->value) << "\n";
     variable->variable->value->value_updated = true;
 
+    #define OP(op) variable->variable->value->value = x_value op y_value
+
     switch (static_cast<int>(operation->variable->value->value)) {
-        case 0:
-            variable->variable->value->value = x_value + y_value;
-            break;
-        case 1:
-            variable->variable->value->value = x_value - y_value;
-            break;
+    case 0:
+        OP(+);
+        break;
+    case 1:
+        OP(-);
+        break;
+    case 2:
+        OP(*);
+        break;
+    case 3:
+        OP(/);
+        break;
 
     default:
         // unexpected case, so break out of the program
@@ -81,6 +89,8 @@ static void op_callback(vector<Value*> values, GlobalState* global_state) {
 static void init_std(struct GlobalState* global_state) {
     OPERATION("add", 0);
     OPERATION("sub", 1);
+    OPERATION("mul", 2);
+    OPERATION("div", 3);
 
     create_keyword("print", 1, print_callback, global_state);
     create_keyword("printflush", 1, printflush_callback, global_state);
