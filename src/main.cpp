@@ -21,12 +21,22 @@ void print_error(const struct Error *error) {
 int main() {
     // printf("lorem ipsum\n");
 
+    // string example_code[1024] = {
+    //     "set world \"phosphophyllite\"",
+    //     "set sit 69.420",
+    //     "print sit",
+    //     "print \"Hello, Phos!\"",
+    //     "printflush message1",
+    // };
     string example_code[1024] = {
-        "set world \"phosphophyllite\"",
-        "set sit 69.420",
-        "print sit",
-        "print \"Hello, Phos!\"",
+        "set x 4",
+        "set y 0",
+        "op add x 13 5",
+        "op sub y 13 5",
+        "print x",
         "printflush message1",
+        "print y",
+        "printflush message2",
     };
     struct GlobalState global_state;
 
@@ -39,7 +49,7 @@ int main() {
     const Error *error = get_error(lexed);
     VALIDATE;
 
-    parse_variables(&lexed, &global_state);
+    parse_variables(&lexed);
 
     // for (const Variable* variable : global_state.variables) {
     //     if (variable->value == nullptr) {

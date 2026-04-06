@@ -40,7 +40,7 @@ class Value {
         double value = 0;
         // TODO: remove `value_updated` if it's unnecessary
         // Whether the decimal value was updated and needs to be reprocessed when printing the value.
-        bool value_updated = false;
+        mutable bool value_updated = false;
         Variable* variable = nullptr;
 
         Value(const string& str_value, const double value, Variable* variable) {
@@ -141,6 +141,8 @@ static void create_keyword(const char* name, const int parameters, void (*callba
 
 inline Variable* find_variable(const string& name, const GlobalState* global_state) {
     for (Variable* variable : global_state->variables) {
+        if (variable == nullptr) {continue;}
+
         if (variable->name == name) {
             return variable;
         }

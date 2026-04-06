@@ -27,7 +27,7 @@ inline vector<Line*> get_declarations(const vector<Line*>& program) {
     return declarations;
 }
 
-static void parse_variables(const vector<Line*>* program, struct GlobalState* global_state) {
+static void parse_variables(const vector<Line*>* program) {
     const vector<Line*> declarations = get_declarations(*program);
 
     for (int i = 0; i < declarations.capacity(); i++) {
