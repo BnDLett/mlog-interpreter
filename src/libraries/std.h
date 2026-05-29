@@ -142,6 +142,10 @@ static void jump_callback(vector<Value*> values, GlobalState* global_state) {
     }
 }
 
+static void stop_callback(vector<Value*> _, GlobalState* global_state) {
+    global_state->executor_index = -1;
+}
+
 #define OPERATION(name, id) {auto value = new Value("id", id, nullptr); auto variable = new Variable(value, name); global_state->variables.push_back(variable);}
 
 static void init_std(GlobalState* global_state) {
@@ -157,4 +161,5 @@ static void init_std(GlobalState* global_state) {
     create_keyword("printflush", 1, printflush_callback, global_state);
     create_keyword("op", 4, op_callback, global_state);
     create_keyword("jump", 4, jump_callback, global_state);
+    create_keyword("stop", 0, stop_callback, global_state);
 }
