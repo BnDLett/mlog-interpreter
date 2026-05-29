@@ -108,6 +108,8 @@ struct GlobalState {
     vector<Variable*> variables;
     vector<string> print_buffer;
     unsigned int executor_index;
+    unsigned int accumulator;
+    bool run = true;
 };
 
 // union Optional {
@@ -215,7 +217,7 @@ inline Line *lex(const string& line, struct GlobalState *global_state, const int
 
         if (c == '"' || c == '\'') {
             in_string = !in_string;
-            word.push_back(c);
+            // word.push_back(c);
 
             if (!in_string) {
                 Value *new_value = new Value(word, 0, nullptr);

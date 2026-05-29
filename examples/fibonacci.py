@@ -3,7 +3,7 @@ from time import time
 first_num = 1
 second_num = 1
 new_num = 0
-limit = 10
+limit = 1_476
 
 start = time()
 for i in range(limit - 2):

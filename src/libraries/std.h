@@ -15,7 +15,7 @@
 
 static void mlog_runtime_error(string message, GlobalState* global_state) {
     cout << "Runtime error on line " << global_state->executor_index << ":\n\t" << message << "\n";
-    global_state->executor_index = -1;
+    global_state->run = false;
 }
 
 static void unrecognized_operation(const Value* operation, GlobalState* global_state) {
@@ -143,7 +143,7 @@ static void jump_callback(vector<Value*> values, GlobalState* global_state) {
 }
 
 static void stop_callback(vector<Value*> _, GlobalState* global_state) {
-    global_state->executor_index = -1;
+    global_state->run = false;
 }
 
 #define OPERATION(name, id) {auto value = new Value("id", id, nullptr); auto variable = new Variable(value, name); global_state->variables.push_back(variable);}

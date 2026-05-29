@@ -1,7 +1,7 @@
 set first_num 1
 set second_num 1
 set new_num 0
-set limit 1000000
+set limit 1476
 set accum 2
 
 op add new_num first_num second_num

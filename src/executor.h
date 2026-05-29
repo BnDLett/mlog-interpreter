@@ -10,10 +10,11 @@
 
 inline void execute(const Line* line, GlobalState* global_state) {
     line->callback->callback(line->values, global_state);
+    global_state->accumulator++;
 }
 
 inline void execute_many(const vector<Line*>& program, GlobalState* global_state) {
-    while (true) {
+    while (global_state->run) {
         if (global_state->executor_index > program.size() - 1) {
             break;
         }
