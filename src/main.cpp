@@ -28,15 +28,26 @@ int main() {
     //     "print \"Hello, Phos!\"",
     //     "printflush message1",
     // };
+
+    // string example_code[1024] = {
+    //     "set x 4",
+    //     "set y 0",
+    //     "op add x 13 5",
+    //     "op sub y 13 5",
+    //     "print x",
+    //     "printflush message1",
+    //     "print y",
+    //     "printflush message2"
+    // };
+
     string example_code[1024] = {
-        "set x 4",
-        "set y 0",
-        "op add x 13 5",
-        "op sub y 13 5",
-        "print x",
-        "printflush message1",
-        "print y",
-        "printflush message2",
+        "set accum 0",
+        // "print accum",
+        // "printflush message1",
+        "op add accum accum 1",
+        "jump 1 notEqual accum 100000",
+        "print accum",
+        "printflush message1"
     };
     struct GlobalState global_state;
 
